@@ -33,6 +33,11 @@ if (isMainThread) {
   var moy = 0;
   var costs = [];
   app.get('/api/getSimulation', function (req, res) {
+
+    // WARNING - NON-SCALABLE CODE: 
+    // Nodejs request event loop should never be blocked by heavy operations like this.
+    // However, since this is a single user experiment, I did not bother to create an async function.
+
     let x = parseInt(req.query.x,10);
     let y = parseInt(req.query.y,10);
     let l = parseInt(req.query.l,10);
