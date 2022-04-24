@@ -136,7 +136,7 @@ export default {
           let avg = dataLenHist.reduce( ( p, c ) => p + c, 0 )/ dataLenHist.length;
           if(avg < 50){
             DISPLAYINTERVAL++;
-          }else if(avg > 50) {
+          }else if(avg > 60) {
             DISPLAYINTERVAL--;
           }
           dataLenHist = [];
