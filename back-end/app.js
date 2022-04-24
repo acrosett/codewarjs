@@ -112,6 +112,7 @@ return function(obj){
 
     const simulation = require('./simulation')
 
+    //Adjust to your machine performance
     setInterval(simulation.run,20);
 
 }
