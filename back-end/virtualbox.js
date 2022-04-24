@@ -20,9 +20,10 @@ exports.run = function (self){
         currentcellid = self.id;
 
         const before = performance.now();
+
+        //Eval
         (new Function("api",self.code))(api)
-        //eval("(function () { "+self.code+"})()",context);
-        //self.run(api);
+
         const diff = performance.now() - before;
 
         let cost = diff/100;
@@ -35,10 +36,6 @@ exports.run = function (self){
 
 
         api.takedmg(cost);
- 
-    
-    //console.log(cells.length);
-
 
 }
 

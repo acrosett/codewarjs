@@ -1,6 +1,8 @@
 # codewar
 Node.js simulation experiment. Cells are controlled by JS code interpreted with the eval() function.
 
+![preview](cells.gif)
+
 How to run:
 
 1. open terminal in \front-end

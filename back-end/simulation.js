@@ -34,7 +34,7 @@ var code;
 
 setTimeout(function(){ 
     
-    fs.readFile('temp.js', 'utf8', function (err, data) {
+    fs.readFile('example_cell_code.js', 'utf8', function (err, data) {
         if (err) throw err;
         code = data;
         env.addCell(new objs.Cell(300, 300, 80,70, "DemoCell", "DarkCyan", 1, "hello", code, env.newTeamId(),env.newId()));
