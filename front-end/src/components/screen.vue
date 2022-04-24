@@ -1,6 +1,6 @@
 <template>
   <div id="screen">
-    <h1>{{title}}</h1>
+    <h1>{{ title }}</h1>
     <div>
       <canvas class="canvas" id="screen-canvas"></canvas>
     </div>
@@ -13,10 +13,12 @@
 
 const axios = require("axios");
 
-const DISPLAYINTERVAL = 20;
+let DISPLAYINTERVAL = 25;
 const FETCHINTERVAL = 1000;
 
 const ENV_SIZE = 12000 / 4;
+
+let dataLenHist = []
 
 let drawarea;
 let xview = ENV_SIZE / 2;
@@ -30,9 +32,9 @@ var vm;
 export default {
   name: "screen",
   props: {
-    title: String
+    title: String,
   },
-  data: function() {
+  data: function () {
     return {
       width: Number,
       height: Number,
@@ -41,7 +43,7 @@ export default {
       zoom: Number,
       flag: Boolean,
       focus: Boolean,
-      state: Boolean
+      state: Boolean,
     };
   },
   methods: {
@@ -64,7 +66,7 @@ export default {
         drawarea.start();
       }
     },
-    run: function() {
+    run: function () {
       if (!vm.bool) {
         vm.fetchdata();
       } else {
@@ -73,7 +75,7 @@ export default {
       vm.bool = !vm.bool;
     },
 
-    fetchdata: function() {
+    fetchdata: function () {
       // eslint-disable-next-line
       //console.log(zoom);
       axios
@@ -81,80 +83,76 @@ export default {
           params: {
             x: xview,
             y: yview,
-            l: drawarea.canvas.width / zoom
-          }
+            l: drawarea.canvas.width / zoom,
+          },
         })
-        .then(response => vm.preparedata(response.data));
+        .then((response) => vm.preparedata(response.data));
     },
 
-    preparedata: function(newdata) {
+    preparedata: function (newdata) {
       var i;
       // eslint-disable-next-line
       //console.log("update " + newdata.length);
-      let order;
+
+      if (vm.data == 0) {
+        vm.data = [];
+      }
 
       for (i = 0; i < newdata.length; i++) {
         if (
-          newdata[i].clusters.length > 0 ||
-          newdata[i].cells.length > 0 ||
-          newdata[i].leeches.length > 0
+          (newdata[i].clusters.length > 0 ||
+            newdata[i].cells.length > 0 ||
+            newdata[i].leeches.length > 0) &&
+          (vm.data.length == 0 ||
+            (newdata[i].order > vm.data[vm.data.length - 1].order &&
+              (vm.nextdata.length == 0 ||
+                newdata[i].order > vm.nextdata[vm.nextdata.length - 1].order)))
         ) {
-          order = newdata[i].order;
-          break;
-        }
-      }
-
-      if (vm.data == 0 || order > vm.data[vm.data.length - 1].order) {
-        if (vm.data == 0) {
-          vm.data = [];
-        }
-
-        for (i = 0; i < newdata.length; i++) {
-          let element = newdata[i];
-          if (
-            element.clusters.length > 0 ||
-            element.cells.length > 0 ||
-            element.leeches.length > 0
-          ) {
-            vm.nextdata.push(element);
-          }
+          //Keep data
+          vm.nextdata.push(newdata[i]);
         }
       }
     },
 
-    updatedata: function() {
-      if (this.data.length > (3 * FETCHINTERVAL) / 20) {
-        this.data = this.data.splice(
-          Math.ceil(this.data.length / 2),
-          this.data.length - 1
-        );
-      }
+    updatedata: function () {
+      // if (this.data.length > (3 * FETCHINTERVAL) / 20) {
+      //   this.data = this.data.splice(
+      //     Math.ceil(this.data.length / 2),
+      //     this.data.length - 1
+      //   );
+      // }
+
       for (let i = 0; i < vm.nextdata.length; i++) {
-        let element = vm.nextdata[i];
-        if (
-          element.clusters.length > 0 ||
-          element.cells.length > 0 ||
-          element.leeches.length > 0
-        ) {
-          this.data.push(element);
-        }
+        this.data.push(vm.nextdata.shift());
       }
-      this.nextdata = [];
     },
 
-    draw: function() {
+    draw: function () {
+
+      if(this.data.length){
+        if(dataLenHist.length < 100){
+          dataLenHist.push(this.data.length);
+        }else{
+          let avg = dataLenHist.reduce( ( p, c ) => p + c, 0 )/ dataLenHist.length;
+          if(avg < 50){
+            DISPLAYINTERVAL++;
+          }else if(avg > 50) {
+            DISPLAYINTERVAL--;
+          }
+          dataLenHist = [];
+        }
+      }
+
       if (this.data.length == 1 || this.data == 0) {
+        setTimeout(vm.draw, DISPLAYINTERVAL);
         return;
       }
       let model = this.data.shift();
 
       drawarea.clear();
       let ctx;
-      // eslint-disable-next-line
-      //console.log(this.data.length);
 
-
-      model.clusters.forEach(cluster => {
+      model.clusters.forEach((cluster) => {
         if (cluster.x + cluster.r < xview) {
           return;
         }
@@ -170,18 +168,16 @@ export default {
         if (cluster.y - cluster.r > yview + drawarea.canvas.height / zoom) {
           return;
         }
-                        // eslint-disable-next-line
-      //console.log(cluster.b);
+        // eslint-disable-next-line
+        //console.log(cluster.b);
         if (cluster.b) {
-
-
           vm.explosions.push(
             new Explosion(
               cluster.r,
               cluster.x,
               cluster.y,
               "white",
-              cluster.r/3,
+              cluster.r / 3
             )
           );
         } else {
@@ -209,7 +205,7 @@ export default {
         }
       });
 
-      model.leeches.forEach(leech => {
+      model.leeches.forEach((leech) => {
         if (leech.x + leech.r < xview) {
           return;
         }
@@ -228,7 +224,13 @@ export default {
 
         if (leech.b) {
           vm.explosions.push(
-            new Explosion(leech.r*1.5, leech.x, leech.y, "purple", leech.r/3)
+            new Explosion(
+              leech.r * 1.5,
+              leech.x,
+              leech.y,
+              "purple",
+              leech.r / 3
+            )
           );
         } else {
           ctx = drawarea.context;
@@ -255,7 +257,7 @@ export default {
         }
       });
 
-            model.cells.forEach(cell => {
+      model.cells.forEach((cell) => {
         if (cell.x + cell.r < xview) {
           return;
         }
@@ -296,16 +298,19 @@ export default {
           ctx.fill();
         }
       });
-      vm.explosions.forEach(exp => {
-            // eslint-disable-next-line
-            
+      vm.explosions.forEach((exp) => {
+        // eslint-disable-next-line
+
         exp.update();
       });
+
+      setTimeout(vm.draw, DISPLAYINTERVAL);
+
     },
 
     pause() {
       clearInterval(this.interval);
-    }
+    },
   },
   created() {
     window.addEventListener("resize", this.resize);
@@ -313,8 +318,7 @@ export default {
   destroyed() {
     window.removeEventListener("resize", this.resize);
   },
-  mounted: function() {
-
+  mounted: function () {
     vm = this;
     vm.data = 0;
     vm.nextdata = [];
@@ -331,24 +335,24 @@ export default {
 
     drawarea = {
       canvas: document.getElementById("screen-canvas"),
-      start: function() {
+      start: function () {
         //this.canvas.classList.add("canvas");
         this.canvas.width = vm.width;
         this.canvas.height = vm.height;
         this.context = this.canvas.getContext("2d");
       },
-      clear: function() {
+      clear: function () {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      }
+      },
     };
 
     drawarea.start();
 
-    window.onfocus = function() {};
+    window.onfocus = function () {};
 
-    window.onblur = function() {};
+    window.onblur = function () {};
 
-    drawarea.canvas.addEventListener("mousewheel", function(e) {
+    drawarea.canvas.addEventListener("mousewheel", function (e) {
       let delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.detail)) / 10;
       if (delta < 0) {
         if (zoom <= 0.25) {
@@ -367,14 +371,14 @@ export default {
 
     drawarea.canvas.addEventListener(
       "mousedown",
-      function() {
+      function () {
         vm.flag = 1;
       },
       false
     );
     drawarea.canvas.addEventListener(
       "mousemove",
-      function(e) {
+      function (e) {
         if (vm.flag) {
           let coefzoom = (10 * 1) / zoom;
           let [coefx, coefy] = GMC(oldx, oldy, e.pageX, e.pageY);
@@ -406,15 +410,15 @@ export default {
     );
     drawarea.canvas.addEventListener(
       "mouseup",
-      function() {
+      function () {
         vm.flag = 0;
       },
       false
     );
 
     setInterval(vm.run, FETCHINTERVAL / 2);
-    setInterval(vm.draw, DISPLAYINTERVAL);
-  }
+    setTimeout(vm.draw, DISPLAYINTERVAL);
+  },
 };
 
 //OBJECTS
@@ -432,8 +436,8 @@ function Explosion(R, x, y, color, lifetime) {
   this.bdead = false;
   this.color = color;
 
-  this.update = function() {
-// eslint-disable-next-line
+  this.update = function () {
+    // eslint-disable-next-line
     //Dessine l'objet
     this.lifetime -= 1;
     if (this.lifetime <= 0) {
@@ -463,7 +467,7 @@ function Explosion(R, x, y, color, lifetime) {
     ctx.fill();
   };
 
-  this.die = function() {
+  this.die = function () {
     this.bdead = true;
   };
 }

@@ -50,7 +50,7 @@ setTimeout(function(){
 
 var pseudoenvs = [];
 
-const MAX_PSEUDOENV = 1000/20;
+const MAX_PSEUDOENV = 1000/10;
 
 
 var moy = 0;

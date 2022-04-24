@@ -25,7 +25,7 @@ if (isMainThread) {
   const express = require('express')
   const app = express()
 
-  const {  performance } = require('perf_hooks');
+  const { performance } = require('perf_hooks');
 
   app.use(express.static('public'));
 
@@ -38,9 +38,9 @@ if (isMainThread) {
     // Nodejs request event loop should never be blocked by heavy operations like this.
     // However, since this is a single user experiment, I did not bother to create an async function.
 
-    let x = parseInt(req.query.x,10);
-    let y = parseInt(req.query.y,10);
-    let l = parseInt(req.query.l,10);
+    let x = parseInt(req.query.x, 10);
+    let y = parseInt(req.query.y, 10);
+    let l = parseInt(req.query.l, 10);
 
     let newenvs = [];
     let penv;
@@ -48,16 +48,16 @@ if (isMainThread) {
     //const before = performance.now();
 
     newenvs = envs.slice();
-    for(let i=0; i < newenvs.length; i++){
+    for (let i = 0; i < newenvs.length; i++) {
 
-      newenvs[i].clusters = newenvs[i].clusters.filter(insidewindow(x,y,l));
+      newenvs[i].clusters = newenvs[i].clusters.filter(insidewindow(x, y, l));
 
-      newenvs[i].cells = newenvs[i].cells.filter(insidewindow(x,y,l));
-  
-      newenvs[i].leeches = newenvs[i].leeches.filter(insidewindow(x,y,l));
+      newenvs[i].cells = newenvs[i].cells.filter(insidewindow(x, y, l));
+
+      newenvs[i].leeches = newenvs[i].leeches.filter(insidewindow(x, y, l));
 
     }
-    
+
     //const diff = performance.now() - before;
     //costs.push(diff/100);
     //let moy = costs.reduce(getSum)/costs.length;
@@ -67,35 +67,35 @@ if (isMainThread) {
 
   })
 
-  function insidewindow(x,y,l) {
-return function(obj){
+  function insidewindow(x, y, l) {
+    return function (obj) {
 
 
-      if((obj.x+obj.r) < x){
-          
+      if ((obj.x + obj.r) < x) {
+
         return false;
       }
 
-      if((obj.y+obj.r) < y){
+      if ((obj.y + obj.r) < y) {
         return false;
       }
 
-      if((obj.x-obj.r) > (x + l)){
+      if ((obj.x - obj.r) > (x + l)) {
         return false;
       }
 
-      if((obj.y-obj.r) > (y + l)){
+      if ((obj.y - obj.r) > (y + l)) {
         return false;
       }
 
-        return true;
-      }
-}
-  
+      return true;
+    }
+  }
+
   app.get('/', function (req, res) {
-    res.sendFile('public/html/index.html', {root: __dirname })
+    res.sendFile('public/html/index.html', { root: __dirname })
   })
-  
+
   app.listen(3000, function () {
     console.log('Example app listening on port 3000!')
   })
@@ -105,15 +105,15 @@ return function(obj){
   worker.on('message', (value) => {
     envs = value;
   });
-  
+
 
 } else {
 
 
-    const simulation = require('./simulation')
+  const simulation = require('./simulation')
 
-    //Adjust to your machine performance
-    setInterval(simulation.run,20);
+  //Adjust to your machine performance
+  setInterval(simulation.run, 20);
 
 }
 
